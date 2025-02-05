@@ -1,67 +1,91 @@
-import io
-import os
-import sys
+```python
+import tkinter as tk
+from tkinter import messagebox
 
-COLORIZE = True
+class Account:
+    def __init__(self, account_number, owner):
+        self.account_number = account_number
+        self.owner = owner
+        self.balance = 0
 
+    def deposit(self, amount):
+        self.balance += amount
 
-class ANSIColors:
-    BOLD_GREEN = "\x1b[1;32m"
-    BOLD_MAGENTA = "\x1b[1;35m"
-    BOLD_RED = "\x1b[1;31m"
-    GREEN = "\x1b[32m"
-    GREY = "\x1b[90m"
-    MAGENTA = "\x1b[35m"
-    RED = "\x1b[31m"
-    RESET = "\x1b[0m"
-    YELLOW = "\x1b[33m"
+    def withdraw(self, amount):
+        if amount <= self.balance:
+            self.balance -= amount
+        else:
+            raise ValueError("Недостаточно средств.")
 
+    def get_balance(self):
+        return self.balance
 
-NoColors = ANSIColors()
+class GBankApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("G-Банк")
+        self.accounts = {}
+        self.create_widgets()
 
-for attr in dir(NoColors):
-    if not attr.startswith("__"):
-        setattr(NoColors, attr, "")
+    def create_widgets(self):
+        tk.Label(self.root, text="Имя владельца:").grid(row=0, column=0)
+        self.owner_entry = tk.Entry(self.root)
+        self.owner_entry.grid(row=0, column=1)
 
+        tk.Button(self.root, text="Открыть аккаунт", command=self.open_account).grid(row=1, column=0, columnspan=2)
 
-def get_colors(colorize: bool = False, *, file=None) -> ANSIColors:
-    if colorize or can_colorize(file=file):
-        return ANSIColors()
-    else:
-        return NoColors
+        tk.Label(self.root, text="Номер аккаунта:").grid(row=2, column=0)
+        self.acc_number_entry = tk.Entry(self.root)
+        self.acc_number_entry.grid(row=2, column=1)
 
+        tk.Label(self.root, text="Сумма:").grid(row=3, column=0)
+        self.amount_entry = tk.Entry(self.root)
+        self.amount_entry.grid(row=3, column=1)
 
-def can_colorize(*, file=None) -> bool:
-    if file is None:
-        file = sys.stdout
+        tk.Button(self.root, text="Внести средства", command=self.deposit).grid(row=4, column=0)
+        tk.Button(self.root, text="Снять средства", command=self.withdraw).grid(row=4, column=1)
+        tk.Button(self.root, text="Проверить баланс", command=self.check_balance).grid(row=5, column=0, columnspan=2)
 
-    if not sys.flags.ignore_environment:
-        if os.environ.get("PYTHON_COLORS") == "0":
-            return False
-        if os.environ.get("PYTHON_COLORS") == "1":
-            return True
-    if os.environ.get("NO_COLOR"):
-        return False
-    if not COLORIZE:
-        return False
-    if os.environ.get("FORCE_COLOR"):
-        return True
-    if os.environ.get("TERM") == "dumb":
-        return False
+    def open_account(self):
+        owner = self.owner_entry.get()
+        if owner:
+            account_number = len(self.accounts) + 1
+            self.accounts[account_number] = Account(account_number, owner)
+            messagebox.showinfo("Успех", f"Аккаунт открыт. Номер аккаунта: {account_number}")
+        else:
+            messagebox.showwarning("Ошибка", "Введите имя владельца.")
 
-    if not hasattr(file, "fileno"):
-        return False
+    def deposit(self):
+        acc_number = int(self.acc_number_entry.get())
+        amount = float(self.amount_entry.get())
+        if acc_number in self.accounts:
+            self.accounts[acc_number].deposit(amount)
+            messagebox.showinfo("Успех", f"Внесено: {amount}. Текущий баланс: {self.accounts[acc_number].get_balance()}.")
+        else:
+            messagebox.showwarning("Ошибка", "Аккаунт не найден.")
 
-    if sys.platform == "win32":
-        try:
-            import nt
+    def withdraw(self):
+        acc_number = int(self.acc_number_entry.get())
+        amount = float(self.amount_entry.get())
+        if acc_number in self.accounts:
+            try:
+                self.accounts[acc_number].withdraw(amount)
+                messagebox.showinfo("Успех", f"Снято: {amount}. Текущий баланс: {self.accounts[acc_number].get_balance()}.")
+            except ValueError as e:
+                messagebox.showwarning("Ошибка", str(e))
+        else:
+            messagebox.showwarning("Ошибка", "Аккаунт не найден.")
 
-            if not nt._supports_virtual_terminal():
-                return False
-        except (ImportError, AttributeError):
-            return False
+    def check_balance(self):
+        acc_number = int(self.acc_number_entry.get())
+        if acc_number in self.accounts:
+            balance = self.accounts[acc_number].get_balance()
+            messagebox.showinfo("Баланс", f"Баланс аккаунта {acc_number}: {balance}.")
+        else:
+            messagebox.showwarning("Ошибка", "Аккаунт не найден.")
 
-    try:
-        return os.isatty(file.fileno())
-    except io.UnsupportedOperation:
-        return file.isatty()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = GBankApp(root)
+    root.mainloop()
+```
